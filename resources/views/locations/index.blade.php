@@ -5,103 +5,175 @@
 
 @section('content')
 
-{{-- Page header --}}
-<div class="page-header d-flex justify-content-between align-items-start">
-    <div>
-        <h4>Locations</h4>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('index') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Locations</li>
-            </ol>
-        </nav>
-    </div>
-    <a href="{{ route('locations.create') }}" class="btn btn-primary btn-sm">
-        <i class="ph-plus me-1"></i>Add Location
-    </a>
-</div>
+<!-- Content area -->
+<div class="content">
 
-{{-- Locations table --}}
-<div class="card">
-    <div class="card-header d-flex align-items-center gap-2">
-        <i class="ph-list text-primary"></i>
-        Location List
-    </div>
-    
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm" id="locationsTable">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 55px">#</th>
-                        <th>Name</th>
-                        <th style="width: 130px">Latitude</th>
-                        <th style="width: 130px">Longitude</th>
-                        <th style="width: 110px">Status</th>
-                        <th style="width: 100px" class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
+    <!-- Locations table -->
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <h5 class="mb-0">Locations List</h5>
+            <a href="{{ route('locations.create') }}" class="btn btn-primary ms-auto">
+                <i class="ph-plus me-2"></i>
+                Add Location
+            </a>
         </div>
+
+        <div class="card-body">
+            Manage all your location data with server-side processing for efficient data handling.
+        </div>
+
+        <table class="table datatable-ajax">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Status</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
     </div>
+    <!-- /locations table -->
+
 </div>
+<!-- /content area -->
 
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/datatables.min.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const table = new DataTable('#locationsTable', {
+// Status configuration
+const statusConfig = {
+    active: {
+        badge: 'bg-teal',
+        icon: 'ph-check-circle',
+        label: 'Active'
+    },
+    pending: {
+        badge: 'bg-orange',
+        icon: 'ph-hourglass',
+        label: 'Pending'
+    },
+    suspended: {
+        badge: 'bg-danger',
+        icon: 'ph-x-circle',
+        label: 'Suspended'
+    }
+};
+
+// Delete location function
+window.deleteLocation = function(id, name) {
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/locations/${id}`;
+        form.innerHTML = `
+            @csrf
+            @method('DELETE')
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Render status badge
+function renderStatusBadge(status) {
+    const config = statusConfig[status] || {
+        badge: 'bg-secondary',
+        icon: 'ph-question',
+        label: 'Unknown'
+    };
+    
+    return `<span class="badge ${config.badge}">
+        <i class="${config.icon} me-1"></i>${config.label}
+    </span>`;
+}
+
+// Render action buttons
+function renderActions(row) {
+    return `<a href="#" class="text-body" data-bs-toggle="dropdown">
+        <i class="ph-list"></i>
+    </a>
+    <div class="dropdown-menu dropdown-menu-end">
+        <a href="${row.editUrl}" class="dropdown-item">
+            <i class="ph-pencil me-2"></i>
+            Edit
+        </a>
+        <button type="button" class="dropdown-item text-danger" onclick="deleteLocation(${row.id}, '${row.name.replace(/'/g, "\\'")}')">
+            <i class="ph-trash me-2"></i>
+            Delete
+        </button>
+    </div>`;
+}
+
+// Initialize Locations DataTable
+$(document).ready(function() {
+    $('.datatable-ajax').DataTable({
         serverSide: true,
+        processing: true,
         ajax: {
-            url: '{{ route('locations.index') }}',
-            type: 'GET',
-            data: function(d) {
-                // DataTables sends: draw, start, length, search[value], order[0][column], order[0][dir]
-                // Laravel expects these as-is
-                return d;
-            }
+            url: '/locations',
+            type: 'GET'
         },
         columns: [
-            { data: 0, name: 'id' },
-            { data: 1, name: 'name' },
-            { data: 2, name: 'latitude' },
-            { data: 3, name: 'longitude' },
-            { data: 4, name: 'status', sortable: false },
-            { data: 5, name: 'actions', sortable: false, searchable: false }
-        ],
-        columnDefs: [
-            {
-                targets: 4,
-                render: function(data) {
-                    return data; // Already formatted as HTML badge in controller
+            { 
+                data: 'name',
+                render: function(data, type, row) {
+                    return `<a href="${row.editUrl}" class="fw-semibold">${data}</a>`;
                 }
             },
-            {
-                targets: 5,
+            { 
+                data: 'latitude',
+                searchable: false,
+                className: 'text-muted'
+            },
+            { 
+                data: 'longitude',
+                searchable: false,
+                className: 'text-muted'
+            },
+            { 
+                data: 'status',
+                searchable: false,
+                orderable: false,
                 render: function(data) {
-                    return data; // Already formatted as HTML form in controller
+                    return renderStatusBadge(data);
+                }
+            },
+            { 
+                data: 'id',
+                searchable: false,
+                orderable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `<div class="dropdown">${renderActions(row)}</div>`;
                 }
             }
         ],
+        order: [[0, 'asc']],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
-        searching: true,
-        ordering: true,
         language: {
-            search: 'Search:',
-            lengthMenu: 'Show _MENU_ records',
-            info: 'Showing _START_ to _END_ of _TOTAL_ records',
-            infoEmpty: 'No records',
+            search: '<span>Filter:</span> _INPUT_',
+            searchPlaceholder: 'Type to filter...',
+            lengthMenu: '<span>Show:</span> _MENU_',
+            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+            infoEmpty: 'Showing 0 to 0 of 0 entries',
             paginate: {
-                first: 'First',
-                last: 'Last',
-                next: 'Next',
-                previous: 'Previous'
+                first: '<i class="ph-caret-double-left"></i>',
+                last: '<i class="ph-caret-double-right"></i>',
+                next: '<i class="ph-caret-right"></i>',
+                previous: '<i class="ph-caret-left"></i>'
             }
+        },
+        dom: '<"datatable-header"fl><"datatable-scroll"t><"datatable-footer"ip>',
+        initComplete: function() {
+            $('.dataTables_length select').addClass('form-select form-select-sm');
+            $('.dataTables_filter input').addClass('form-control form-control-sm');
+            $('.dataTables_filter input').attr('placeholder', 'Type to filter...');
         }
     });
 });

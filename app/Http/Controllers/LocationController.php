@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLocationRequest;
 use App\Http\Requests\UpdateLocationRequest;
-use App\Http\Resources\LocationResource;
 use App\Models\Location;
 use App\Services\LocationService;
 use Illuminate\Http\JsonResponse;
@@ -19,40 +18,41 @@ class LocationController extends Controller
     ) {}
 
     /**
-     * GET /locations
-     * - Normal request  → return list view
-     * - AJAX/JSON request → return DataTables JSON for AJAX
+     * GET /locations (view)
+     * Returns View if no DataTables params, JSON if DataTables request
      */
     public function index(Request $request): View|JsonResponse
     {
-        // Handle DataTables AJAX request
-        if ($request->expectsJson() || $request->has('draw')) {
-            return $this->datatable($request);
+        // DataTables AJAX request (detected by 'draw' param)
+        if ($request->has('draw')) {
+            return $this->getDatatablesData($request);
         }
 
-        // Normal page load - just return view (data loaded via AJAX)
+        // Normal view request
         return view('locations.index');
     }
 
     /**
-     * Handle DataTables AJAX request
-     * GET /locations?draw=1&start=0&length=10&search[value]=...&order[0][column]=0&order[0][dir]=asc
+     * Handles DataTables server-side processing
+     * Returns raw JSON data for frontend rendering
      */
-    private function datatable(Request $request): JsonResponse
+    private function getDatatablesData(Request $request): JsonResponse
     {
         $draw = intval($request->input('draw'));
         $start = intval($request->input('start', 0));
         $length = intval($request->input('length', 10));
         $searchValue = $request->input('search.value', '');
-        
-        // Get total records count
+
+        // Get total records count (before filtering)
         $totalRecords = Location::count();
 
-        // Build query with search
+        // Build query with search filter
         $query = Location::query();
         if (!empty($searchValue)) {
             $query->where(function($q) use ($searchValue) {
                 $q->where('name', 'like', '%' . $searchValue . '%')
+                  ->orWhere('latitude', 'like', '%' . $searchValue . '%')
+                  ->orWhere('longitude', 'like', '%' . $searchValue . '%')
                   ->orWhere('status', 'like', '%' . $searchValue . '%');
             });
         }
@@ -65,54 +65,29 @@ class LocationController extends Controller
         
         if ($request->has('order.0.column')) {
             $colIndex = intval($request->input('order.0.column'));
-            $columns = ['id', 'name', 'latitude', 'longitude', 'status', 'created_at'];
+            $columns = ['id', 'name', 'latitude', 'longitude', 'status', 'id'];
+            
             if (isset($columns[$colIndex])) {
                 $orderColumn = $columns[$colIndex];
-                $orderDir = $request->input('order.0.dir') === 'desc' ? 'desc' : 'asc';
+                $orderDir = strtolower($request->input('order.0.dir')) === 'desc' ? 'desc' : 'asc';
             }
         }
 
-        // Get paginated data
+        // Get paginated & sorted data
         $locations = $query->orderBy($orderColumn, $orderDir)
             ->offset($start)
             ->limit($length)
             ->get();
 
-        // Format data for DataTables
+        // Return raw data only
         $data = $locations->map(function($location) {
-            $badgeClass = match($location->status) {
-                'active' => 'bg-success',
-                'pending' => 'bg-warning text-dark',
-                'suspended' => 'bg-danger',
-                default => 'bg-secondary',
-            };
-            $icons = [
-                'active' => 'ph-check-circle',
-                'pending' => 'ph-hourglass',
-                'suspended' => 'ph-x-circle',
-            ];
-            
-            $statusBadge = '<span class="badge ' . $badgeClass . '">'
-                . '<i class="' . ($icons[$location->status] ?? 'ph-question') . ' me-1"></i>'
-                . ucfirst($location->status)
-                . '</span>';
-
-            $actions = '<div class="d-flex justify-content-center gap-1">'
-                . '<a href="' . route('locations.edit', $location) . '" class="btn btn-xs btn-outline-primary" style="padding: 2px 8px; font-size: 11px" title="Edit">'
-                . '<i class="ph-pencil"></i></a>'
-                . '<form action="' . route('locations.destroy', $location) . '" method="POST" style="display: inline;" onsubmit="return confirm(\'Delete ' . $location->name . '?\');">'
-                . csrf_field()
-                . method_field('DELETE')
-                . '<button type="submit" class="btn btn-xs btn-outline-danger" style="padding: 2px 8px; font-size: 11px" title="Delete">'
-                . '<i class="ph-trash"></i></button></form></div>';
-
             return [
-                $location->id,
-                $location->name,
-                $location->latitude ?? '—',
-                $location->longitude ?? '—',
-                $statusBadge,
-                $actions,
+                'id' => $location->id,
+                'name' => $location->name,
+                'latitude' => $location->latitude ?? '—',
+                'longitude' => $location->longitude ?? '—',
+                'status' => $location->status,
+                'editUrl' => route('locations.edit', $location),
             ];
         })->toArray();
 
@@ -170,10 +145,11 @@ class LocationController extends Controller
     /**
      * DELETE /locations/{location}
      */
-    public function destroy(Location $location): JsonResponse
+    public function destroy(Location $location): RedirectResponse
     {
         $this->locationService->destroy($location);
 
-        return response()->json(['message' => 'Location deleted successfully.']);
+        return redirect()->route('locations.index')
+            ->with('success', 'Location deleted successfully.');
     }
 }
