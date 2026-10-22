@@ -1,0 +1,71 @@
+/* Phosphor Icons Font */
+@font-face {
+  font-family: "Phosphor";
+  src: url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.eot");
+  src: url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.eot?#iefix") format("embedded-opentype"),
+       url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.woff2") format("woff2"),
+       url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.woff") format("woff"),
+       url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/npm/phosphor-icons@2.0.0/src/font/phosphor.svg#Phosphor") format("svg");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.ph,
+[class^="ph-"],
+[class*=" ph-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "Phosphor" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Icon mapping */
+.ph-list:before { content: "\f31c"; }
+.ph-house:before { content: "\f3eb"; }
+.ph-map-pin:before { content: "\f3e6"; }
+.ph-user-circle:before { content: "\f4e7"; }
+.ph-gear:before { content: "\f3e5"; }
+.ph-sign-out:before { content: "\f4a9"; }
+.ph-arrows-left-right:before { content: "\f31d"; }
+.ph-x:before { content: "\f3ab"; }
+.ph-dots-three:before { content: "\f421"; }
+.ph-plus:before { content: "\f3dd"; }
+.ph-pencil:before { content: "\f3d9"; }
+.ph-trash:before { content: "\f3fc"; }
+.ph-eye:before { content: "\f35a"; }
+.ph-magnifying-glass:before { content: "\f3a8"; }
+.ph-funnel:before { content: "\f369"; }
+.ph-download-simple:before { content: "\f34f"; }
+.ph-printer:before { content: "\f3e3"; }
+.ph-cog:before { content: "\f3e5"; }
+.ph-check:before { content: "\f33e"; }
+.ph-warning:before { content: "\f510"; }
+.ph-info:before { content: "\f33c"; }
+.ph-question:before { content: "\f3f0"; }
+.ph-calendar:before { content: "\f32a"; }
+.ph-clock:before { content: "\f33a"; }
+.ph-envelope:before { content: "\f358"; }
+.ph-phone:before { content: "\f3dc"; }
+.ph-location:before { content: "\f3e6"; }
+.ph-chat:before { content: "\f33b"; }
+.ph-bell:before { content: "\f330"; }
+.ph-heart:before { content: "\f3a7"; }
+.ph-star:before { content: "\f3f6"; }
+.ph-share:before { content: "\f3ec"; }
+.ph-link:before { content: "\f3a9"; }
+.ph-copy:before { content: "\f340"; }
+.ph-check-circle:before { content: "\f33f"; }
+.ph-x-circle:before { content: "\f3ab"; }
+.ph-exclamation-circle:before { content: "\f62d"; }
+.ph-info-circle:before { content: "\f33c"; }
+.ph-question-circle:before { content: "\f3f0"; }
